@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: django
+  labels:
+    app.kubernetes.io/name: django
+    app.kubernetes.io/component: web
+    app.kubernetes.io/part-of: k8s-test-django
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: django
+  template:
+    metadata:
+      labels:
+        app: django
+        app.kubernetes.io/name: django
+        app.kubernetes.io/component: web
+        app.kubernetes.io/part-of: k8s-test-django
+    spec:
+      containers:
+        - name: django
+          image: django_unit_app:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+          env:
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: django-secrets
+                  key: SECRET_KEY
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: django-secrets
+                  key: DATABASE_URL
+            - name: DEBUG
+              value: "False"
+            - name: ALLOWED_HOSTS
+              value: "*"
