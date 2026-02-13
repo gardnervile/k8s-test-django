@@ -95,3 +95,83 @@ Apply it to the cluster:
 kubectl apply -f kubernetes/secret.yaml
 kubectl apply -f kubernetes/
 ```
+## 🚀 Запуск проекта в Minikube (с Ingress)
+
+### 1️⃣ Запуск Minikube
+
+```bash
+minikube start --driver=docker
+minikube addons enable ingress
+```
+
+---
+
+### 2️⃣ Создание Secret (НЕ коммитить в репозиторий)
+
+```bash
+kubectl create secret generic django-secrets \
+  --from-literal=SECRET_KEY='ваш-секретный-ключ' \
+  --from-literal=DATABASE_URL='postgres://postgres:postgres@<IP_ХОСТА>:5432/webapp'
+```
+
+Замените `<IP_ХОСТА>` на IP-адрес вашей машины (например: `192.168.1.34`).
+
+---
+
+### 3️⃣ Применение манифестов Kubernetes
+
+```bash
+kubectl apply -f kubernetes/
+```
+
+Дождитесь запуска Deployment:
+
+```bash
+kubectl rollout status deployment/django
+```
+
+---
+
+### 4️⃣ Привязка локального домена
+
+Узнайте IP Minikube:
+
+```bash
+minikube ip
+```
+
+Добавьте его в файл `/etc/hosts`:
+
+```bash
+sudo sh -c 'echo "<MINIKUBE_IP> star-burger.test" >> /etc/hosts'
+```
+
+Пример:
+
+```bash
+sudo sh -c 'echo "192.168.49.2 star-burger.test" >> /etc/hosts'
+```
+
+---
+
+### 5️⃣ Открыть сайт в браузере
+
+```
+http://star-burger.test
+```
+
+Админка:
+
+```
+http://star-burger.test/admin/
+```
+
+---
+
+### 🔄 Пересборка образа после изменений кода
+
+```bash
+docker build -t django_unit_app:latest -f backend_main_django/Dockerfile.unit.k8s backend_main_django
+minikube image load django_unit_app:latest
+kubectl rollout restart deployment/django
+```
