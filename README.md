@@ -175,3 +175,18 @@ docker build -t django_unit_app:latest -f backend_main_django/Dockerfile.unit.k8
 minikube image load django_unit_app:latest
 kubectl rollout restart deployment/django
 ```
+## 🧹 Автоматическая очистка сессий
+
+CronJob запускается ежедневно в 03:00.
+
+Проверка:
+
+```bash
+kubectl get cronjobs
+```
+
+Принудительный запуск:
+
+```bash
+kubectl create job --from=cronjob/django-clearsessions django-clearsessions-once
+```
