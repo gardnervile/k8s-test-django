@@ -1,0 +1,31 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: django-migrate
+  labels:
+    app: django
+    app.kubernetes.io/name: django
+    app.kubernetes.io/component: maintenance
+    app.kubernetes.io/part-of: k8s-test-django
+spec:
+  backoffLimit: 1
+  ttlSecondsAfterFinished: 300
+  template:
+    metadata:
+      labels:
+        app: django
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: django_unit_app:latest
+          imagePullPolicy: IfNotPresent
+          command: ["python", "/app/src/manage.py", "migrate", "--noinput"]
+          env:
+            - name: DEBUG
+              value: "False"
+            - name: ALLOWED_HOSTS
+              value: "*"
+          envFrom:
+            - secretRef:
+                name: django-secrets
