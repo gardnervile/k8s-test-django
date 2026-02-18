@@ -1,0 +1,43 @@
+FROM python:3.9-slim-bullseye
+
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl apt-transport-https gnupg2 lsb-release ca-certificates \
+    build-essential gcc python3-dev libpq-dev \
+  && curl -o /usr/share/keyrings/nginx-keyring.gpg https://unit.nginx.org/keys/nginx-keyring.gpg \
+  && echo "deb [signed-by=/usr/share/keyrings/nginx-keyring.gpg] https://packages.nginx.org/unit/debian/ $(lsb_release -cs) unit" > /etc/apt/sources.list.d/unit.list \
+  && apt-get update && apt-get install -y --no-install-recommends unit unit-python3.9 \
+  && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt /app/
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . /app/
+
+COPY unit_config.json /app/unit_config.json
+
+RUN cat > /app/entrypoint.sh <<'SH'
+#!/bin/sh
+set -e
+
+unitd --no-daemon --control unix:/var/run/control.unit.sock &
+UNIT_PID=$!
+
+for i in $(seq 1 100); do
+  [ -S /var/run/control.unit.sock ] && break
+  sleep 0.1
+done
+
+curl --unix-socket /var/run/control.unit.sock -X PUT --data-binary @/app/unit_config.json http://localhost/config
+
+wait $UNIT_PID
+SH
+
+RUN chmod +x /app/entrypoint.sh
+
+EXPOSE 80
+CMD ["/app/entrypoint.sh"]

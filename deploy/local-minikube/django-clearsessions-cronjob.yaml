@@ -8,11 +8,14 @@ metadata:
     app.kubernetes.io/component: maintenance
     app.kubernetes.io/part-of: k8s-test-django
 spec:
-  schedule: "0 3 * * *"   # каждый день в 03:00
+  schedule: "0 3 * * *"  # каждый день в 03:00
+  startingDeadlineSeconds: 300   # 5 минут
   successfulJobsHistoryLimit: 1
   failedJobsHistoryLimit: 1
   jobTemplate:
     spec:
+      backoffLimit: 1
+      ttlSecondsAfterFinished: 300  # удалить job через 5 минут после завершения
       template:
         metadata:
           labels:
