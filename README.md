@@ -237,3 +237,120 @@ docker buildx build \
 ```
 docker push gardnervile/django-site:$TAG
 ```
+# Django Site — деплой в yc-sirius-dev
+
+## Архитектура
+
+В dev-окружении используется следующая схема обработки HTTP-запросов:
+
+Браузер → Application Load Balancer → main-nginx → Django
+
+- ALB принимает HTTPS-трафик по доменному имени
+- main-nginx работает как reverse proxy
+- Django запущен в отдельном Deployment
+- PostgreSQL — Managed Service в Яндекс Облаке (вне Kubernetes)
+
+---
+
+## Необходимые переменные окружения
+
+Django использует следующие переменные:
+
+- SECRET_KEY
+- DATABASE_URL
+- DEBUG
+- ALLOWED_HOSTS
+
+Переменные передаются через Kubernetes Secret `django-secrets`.
+
+---
+
+## Сборка и публикация Docker-образа
+
+```bash
+docker build -t gardnervile/django-site:<commit_hash> .
+docker push gardnervile/django-site:<commit_hash>
+```
+
+---
+
+## Обновление версии в кластере
+
+```bash
+kubectl -n edu-evgenij-kondratev set image deployment/django \
+django=gardnervile/django-site:<commit_hash>
+
+kubectl -n edu-evgenij-kondratev rollout status deployment/django
+```
+
+---
+
+## Применение миграций
+
+```bash
+kubectl -n edu-evgenij-kondratev exec -it deploy/django -- \
+python /app/src/manage.py migrate
+```
+
+---
+
+## Создание суперпользователя
+
+```bash
+kubectl -n edu-evgenij-kondratev exec -it deploy/django -- \
+python /app/src/manage.py createsuperuser
+```
+
+---
+
+## Проверка доступности
+
+Через port-forward:
+
+```bash
+kubectl -n edu-evgenij-kondratev port-forward svc/main-nginx 8080:80
+```
+
+Открыть в браузере:
+
+http://localhost:8080
+
+Через домен (через ALB):
+
+https://edu-evgenij-kondratev.yc-sirius-dev.pelid.team
+
+---
+
+## Где смотреть ошибки
+
+Логи Django:
+
+```bash
+kubectl -n edu-evgenij-kondratev logs deploy/django
+```
+
+Логи Nginx:
+
+```bash
+kubectl -n edu-evgenij-kondratev logs deploy/main-nginx
+```
+
+---
+
+## Что требуется для работы приложения
+
+- Kubernetes Cluster (yc-sirius-dev)
+- Managed PostgreSQL
+- Docker Registry (Docker Hub)
+- Application Load Balancer
+- TLS-сертификат
+
+---
+
+## Как проверить успешность деплоя
+
+- Pod `django` находится в статусе Running
+- Pod `main-nginx` находится в статусе Running
+- `kubectl rollout status` завершён успешно
+- Сайт доступен через браузер
+- Админка доступна по `/admin`
