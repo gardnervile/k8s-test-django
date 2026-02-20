@@ -195,17 +195,45 @@ kubectl create job --from=cronjob/django-clearsessions django-clearsessions-once
 
 NS=edu-evgenij-kondratev
 
-# 1) Создать secret pg-root-crt из уже выданного секрета postgres
+ 1) Создать secret pg-root-crt из уже выданного секрета postgres
+ ```
 kubectl -n "$NS" get secret postgres -o jsonpath='{.data.root\.crt}' | base64 -d > root.crt
 kubectl -n "$NS" delete secret pg-root-crt --ignore-not-found
 kubectl -n "$NS" create secret generic pg-root-crt --from-file=root.crt=root.crt
 rm -f root.crt
+```
 
-# 2) Применить pod psql-test (манифест монтирует root.crt в /root/.postgresql/root.crt)
+ 2) Применить pod psql-test (манифест монтирует root.crt в /root/.postgresql/root.crt)
+ ```
 kubectl -n "$NS" delete pod psql-test --ignore-not-found
 kubectl apply -f deploy/yc-sirius-dev/psql-test.yaml
 kubectl -n "$NS" wait --for=condition=Ready pod/psql-test --timeout=120s
+```
 
-# 3) Проверить подключение (SSL verify-full)
+ 3) Проверить подключение (SSL verify-full)
+ ```
 kubectl -n "$NS" exec -it psql-test -- sh -lc 'psql "sslmode=verify-full" -c "\conninfo"'
 kubectl -n "$NS" exec -it psql-test -- sh -lc 'psql "sslmode=verify-full" -c "\dt"'
+```
+# Как собрать и опубликовать Docker-образ
+
+ 1. Перейти в директорию backend_main_django
+```
+cd backend_main_django
+```
+ 2. Получить хэш текущего коммита
+```
+TAG=$(git rev-parse --short HEAD)
+```
+ 3. Собрать образ
+```
+docker buildx build \
+  --platform=linux/amd64 \
+  -t gardnervile/django-site:$TAG \
+  -f Dockerfile.unit.k8s \
+  --load .
+```
+ 4. Опубликовать образ
+```
+docker push gardnervile/django-site:$TAG
+```

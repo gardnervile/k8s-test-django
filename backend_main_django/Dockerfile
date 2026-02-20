@@ -12,6 +12,9 @@ RUN apt update && apt install -y python3-pip                                  \
 COPY unit_config.json /docker-entrypoint.d/
 COPY src /webapp/src
 WORKDIR /webapp/src
-RUN SECRET_KEY=empty python manage.py collectstatic --noinput
 EXPOSE 80
 VOLUME ["/media"]
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
