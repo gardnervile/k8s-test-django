@@ -21,8 +21,263 @@ data:
 immutable: false
 kind: ConfigMap
 metadata:
-  creationTimestamp: "2026-02-18T16:05:25Z"
   name: main-nginx-config
   namespace: edu-evgenij-kondratev
-  resourceVersion: "207681604"
-  uid: 3a5d01cc-89bd-4b1f-b826-bb9e19d164dc
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  generation: 3
+  name: main-nginx
+  namespace: edu-evgenij-kondratev
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: main-nginx
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/restartedAt: "2026-02-18T20:11:53Z"
+      creationTimestamp: null
+      labels:
+        app: main-nginx
+    spec:
+      automountServiceAccountToken: true
+      containers:
+        - image: nginx:1.16.1
+          imagePullPolicy: IfNotPresent
+          name: nginx
+          ports:
+            - containerPort: 80
+              protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+            - mountPath: /etc/nginx/nginx.conf
+              mountPropagation: None
+              name: nginx-config
+              readOnly: true
+              subPath: nginx.conf
+      dnsPolicy: ClusterFirst
+      enableServiceLinks: true
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      shareProcessNamespace: false
+      terminationGracePeriodSeconds: 30
+      volumes:
+        - configMap:
+            defaultMode: 420
+            items:
+              - key: nginx.conf
+                path: nginx.conf
+            name: main-nginx-config
+            optional: false
+          name: nginx-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  finalizers:
+    - ingress.ya.ru/final
+  name: main-nginx
+  namespace: edu-evgenij-kondratev
+spec:
+  clusterIP: 10.96.179.20
+  clusterIPs:
+    - 10.96.179.20
+  externalTrafficPolicy: Cluster
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+    - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+    - nodePort: 31368
+      port: 80
+      protocol: TCP
+      targetPort: 80
+  selector:
+    app: main-nginx
+  sessionAffinity: None
+  type: NodePort
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  generation: 3
+  name: main-nginx
+  namespace: edu-evgenij-kondratev
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: main-nginx
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/restartedAt: "2026-02-18T20:11:53Z"
+      creationTimestamp: null
+      labels:
+        app: main-nginx
+    spec:
+      automountServiceAccountToken: true
+      containers:
+        - image: nginx:1.16.1
+          imagePullPolicy: IfNotPresent
+          name: nginx
+          ports:
+            - containerPort: 80
+              protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+            - mountPath: /etc/nginx/nginx.conf
+              mountPropagation: None
+              name: nginx-config
+              readOnly: true
+              subPath: nginx.conf
+      dnsPolicy: ClusterFirst
+      enableServiceLinks: true
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      shareProcessNamespace: false
+      terminationGracePeriodSeconds: 30
+      volumes:
+        - configMap:
+            defaultMode: 420
+            items:
+              - key: nginx.conf
+                path: nginx.conf
+            name: main-nginx-config
+            optional: false
+          name: nginx-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  finalizers:
+    - ingress.ya.ru/final
+  name: main-nginx
+  namespace: edu-evgenij-kondratev
+spec:
+  clusterIP: 10.96.179.20
+  clusterIPs:
+    - 10.96.179.20
+  externalTrafficPolicy: Cluster
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+    - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+    - nodePort: 31368
+      port: 80
+      protocol: TCP
+      targetPort: 80
+  selector:
+    app: main-nginx
+  sessionAffinity: None
+  type: NodePort
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  generation: 3
+  name: main-nginx
+  namespace: edu-evgenij-kondratev
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: main-nginx
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/restartedAt: "2026-02-18T20:11:53Z"
+      creationTimestamp: null
+      labels:
+        app: main-nginx
+    spec:
+      automountServiceAccountToken: true
+      containers:
+        - image: nginx:1.16.1
+          imagePullPolicy: IfNotPresent
+          name: nginx
+          ports:
+            - containerPort: 80
+              protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+            - mountPath: /etc/nginx/nginx.conf
+              mountPropagation: None
+              name: nginx-config
+              readOnly: true
+              subPath: nginx.conf
+      dnsPolicy: ClusterFirst
+      enableServiceLinks: true
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      shareProcessNamespace: false
+      terminationGracePeriodSeconds: 30
+      volumes:
+        - configMap:
+            defaultMode: 420
+            items:
+              - key: nginx.conf
+                path: nginx.conf
+            name: main-nginx-config
+            optional: false
+          name: nginx-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  finalizers:
+    - ingress.ya.ru/final
+  name: main-nginx
+  namespace: edu-evgenij-kondratev
+spec:
+  clusterIP: 10.96.179.20
+  clusterIPs:
+    - 10.96.179.20
+  externalTrafficPolicy: Cluster
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+    - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+    - nodePort: 31368
+      port: 80
+      protocol: TCP
+      targetPort: 80
+  selector:
+    app: main-nginx
+  sessionAffinity: None
+  type: NodePort

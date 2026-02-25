@@ -8,14 +8,14 @@ metadata:
     app.kubernetes.io/component: maintenance
     app.kubernetes.io/part-of: k8s-test-django
 spec:
-  schedule: "0 3 * * *"  # каждый день в 03:00
-  startingDeadlineSeconds: 300   # 5 минут
+  schedule: "0 3 * * *" # каждый день в 03:00
+  startingDeadlineSeconds: 300 # 5 минут
   successfulJobsHistoryLimit: 1
   failedJobsHistoryLimit: 1
   jobTemplate:
     spec:
       backoffLimit: 1
-      ttlSecondsAfterFinished: 300  # удалить job через 5 минут после завершения
+      ttlSecondsAfterFinished: 300 # удалить job через 5 минут после завершения
       template:
         metadata:
           labels:
@@ -35,3 +35,231 @@ spec:
               envFrom:
                 - secretRef:
                     name: django-secrets
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: django
+  labels:
+    app.kubernetes.io/name: django
+    app.kubernetes.io/component: web
+    app.kubernetes.io/part-of: k8s-test-django
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: django
+  template:
+    metadata:
+      labels:
+        app: django
+        app.kubernetes.io/name: django
+        app.kubernetes.io/component: web
+        app.kubernetes.io/part-of: k8s-test-django
+    spec:
+      containers:
+        - name: django
+          image: django_unit_app:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+          env:
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: django-secrets
+                  key: SECRET_KEY
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: django-secrets
+                  key: DATABASE_URL
+            - name: DEBUG
+              value: "False"
+            - name: ALLOWED_HOSTS
+              value: "*"
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: django
+spec:
+  rules:
+    - host: star-burger.test
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: django
+                port:
+                  number: 80
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: django-migrate
+  labels:
+    app: django
+    app.kubernetes.io/name: django
+    app.kubernetes.io/component: maintenance
+    app.kubernetes.io/part-of: k8s-test-django
+spec:
+  backoffLimit: 1
+  ttlSecondsAfterFinished: 300
+  template:
+    metadata:
+      labels:
+        app: django
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: django_unit_app:latest
+          imagePullPolicy: IfNotPresent
+          command: ["python", "/app/src/manage.py", "migrate", "--noinput"]
+          env:
+            - name: DEBUG
+              value: "False"
+            - name: ALLOWED_HOSTS
+              value: "*"
+          envFrom:
+            - secretRef:
+                name: django-secrets
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: django
+spec:
+  type: ClusterIP
+  selector:
+    app: django
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: django-secrets
+type: Opaque
+stringData:
+  SECRET_KEY: "empty"
+  DATABASE_URL: "postgres://postgres:postgres@host.docker.internal:5432/webapp"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: django
+  labels:
+    app.kubernetes.io/name: django
+    app.kubernetes.io/component: web
+    app.kubernetes.io/part-of: k8s-test-django
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: django
+  template:
+    metadata:
+      labels:
+        app: django
+        app.kubernetes.io/name: django
+        app.kubernetes.io/component: web
+        app.kubernetes.io/part-of: k8s-test-django
+    spec:
+      containers:
+        - name: django
+          image: django_unit_app:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+          env:
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: django-secrets
+                  key: SECRET_KEY
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: django-secrets
+                  key: DATABASE_URL
+            - name: DEBUG
+              value: "False"
+            - name: ALLOWED_HOSTS
+              value: "*"
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: django
+spec:
+  rules:
+    - host: star-burger.test
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: django
+                port:
+                  number: 80
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: django-migrate
+  labels:
+    app: django
+    app.kubernetes.io/name: django
+    app.kubernetes.io/component: maintenance
+    app.kubernetes.io/part-of: k8s-test-django
+spec:
+  backoffLimit: 1
+  ttlSecondsAfterFinished: 300
+  template:
+    metadata:
+      labels:
+        app: django
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: django_unit_app:latest
+          imagePullPolicy: IfNotPresent
+          command: ["python", "/app/src/manage.py", "migrate", "--noinput"]
+          env:
+            - name: DEBUG
+              value: "False"
+            - name: ALLOWED_HOSTS
+              value: "*"
+          envFrom:
+            - secretRef:
+                name: django-secrets
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: django
+spec:
+  type: ClusterIP
+  selector:
+    app: django
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: django-secrets
+type: Opaque
+stringData:
+  SECRET_KEY: "empty"
+  DATABASE_URL: "postgres://postgres:postgres@host.docker.internal:5432/webapp"
